@@ -1,0 +1,84 @@
+/* Twoslash hover effects */
+.token.twoslash-hover {
+    cursor: pointer;
+    border-radius: 2px;
+    transition: background-color 0.1s ease;
+}
+
+.token.twoslash-hover:hover {
+    background-color: rgba(0, 0, 0, 0.05) !important;
+}
+
+[data-theme='dark'] .token.twoslash-hover:hover {
+    background-color: rgba(255, 255, 255, 0.05) !important;
+}
+
+/* Twoslash block styling */
+.twoslash-block .codeBlock {
+    position: relative;
+}
+
+/* Twoslash tooltip styling */
+.twoslash-tooltip {
+    background-color: var(--ifm-background-color);
+    border: 1px solid var(--ifm-color-emphasis-300);
+    border-radius: 4px;
+    padding: 8px 12px;
+    font-size: 13px;
+    font-family: var(--ifm-font-family-monospace);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    z-index: 9999;
+    max-width: 400px;
+    white-space: pre-wrap;
+    pointer-events: none;
+}
+
+.twoslash-tooltip .twoslash-type {
+    color: var(--ifm-color-success);
+}
+
+.twoslash-tooltip .twoslash-docs {
+    color: var(--ifm-color-emphasis-700);
+    margin-top: 4px;
+}
+
+/* Dark mode adjustments */
+[data-theme='dark'] .twoslash-tooltip {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+/* Animation for smooth tooltip appearance */
+.twoslash-tooltip {
+    animation: twoslash-tooltip-fade-in 0.15s ease-out;
+}
+
+@keyframes twoslash-tooltip-fade-in {
+    from {
+        opacity: 0;
+        transform: translateY(4px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Enhanced error styling for Twoslash blocks */
+.twoslash-block .token.error {
+    background-color: rgba(255, 0, 0, 0.1);
+    text-decoration: underline wavy red;
+}
+
+[data-theme='dark'] .twoslash-block .token.error {
+    background-color: rgba(255, 0, 0, 0.15);
+}
+
+/* Responsive tooltip adjustments */
+@media (max-width: 768px) {
+    .twoslash-tooltip {
+        max-width: 280px;
+        font-size: 12px;
+        padding: 6px 10px;
+    }
+}

@@ -1,0 +1,152 @@
+---
+title: "Twoslash TypeScript Demo"
+sidebar_label: "Twoslash Demo"
+description: "Twoslash TypeScript Integration Demo"
+---
+
+# Twoslash TypeScript Integration Demo
+
+This page demonstrates the Twoslash integration for enhanced TypeScript code blocks with interactive
+type information.
+
+## Basic Type Inference
+
+```typescript twoslash
+const userName = "Alice";
+//    ^?
+
+//highlight-start
+const userAge = 30;
+//    ^?
+//highlight-end
+```
+
+## Simple Variable Test
+
+```typescript twoslash
+const message = "Hello World";
+//    ^?
+
+const number = 42;
+//    ^?
+```
+
+## Function Return Type
+
+```typescript twoslash
+function add(a: number, b: number) {
+  return a + b;
+}
+
+const result = add(5, 3);
+//    ^?
+```
+
+## Complex Object Types
+
+```typescript twoslash
+interface User {
+  id: number;
+  name: string;
+  email: string;
+  isActive: boolean;
+}
+
+const user: User = {
+  id: 1,
+  name: "John Doe",
+  email: "john@example.com",
+  isActive: true,
+};
+
+const userEmail = user.email;
+//    ^?
+```
+
+## Array Methods and Generics
+
+```typescript twoslash
+const numbers = [1, 2, 3, 4, 5];
+//    ^?
+
+const doubled = numbers.map((n) => n * 2);
+//    ^?
+
+const sum = numbers.reduce((acc, curr) => acc + curr, 0);
+//    ^?
+```
+
+## Async/Await Types
+
+```typescript twoslash
+async function fetchUserData(id: number) {
+  const response = await fetch(`/api/users/${id}`);
+  const data = await response.json();
+  return data;
+}
+
+const userData = await fetchUserData(123);
+//    ^?
+```
+
+## Error Examples
+
+```typescript twoslash
+// @errors: 2322
+const invalidAssignment: string = 42;
+```
+
+```typescript twoslash
+// @errors: 2339
+const obj = { name: "test" };
+const value = obj.nonExistentProperty;
+```
+
+## React Component Example
+
+```tsx twoslash
+import React from "react";
+
+interface ButtonProps {
+  label: string;
+  onClick: () => void;
+  disabled?: boolean;
+}
+
+const Button: React.FC<ButtonProps> = ({ label, onClick, disabled = false }) => {
+  return (
+    <button onClick={onClick} disabled={disabled}>
+      {label}
+    </button>
+  );
+};
+
+const handleClick = () => console.log("clicked");
+const myButton = <Button label="Click me" onClick={handleClick} />;
+//    ^?
+```
+
+## Usage Instructions
+
+To use Twoslash in your documentation:
+
+1. **Add `twoslash` to the code block meta**:
+
+   ````markdown
+   ```typescript twoslash
+   const data = { message: "Hello!" };
+   //    ^?
+   ```
+   ````
+
+2. **Use `^?` comments** to show type information on hover
+3. **Only blocks with `twoslash` will be processed** - regular code blocks remain unchanged
+4. **Supports TypeScript, JavaScript, JSX, and TSX**
+
+The integration provides:
+
+- ✅ **Hover tooltips** with type information
+- ✅ **Error highlighting** for TypeScript errors
+- ✅ **Enhanced syntax highlighting**
+- ✅ **Dark/light mode support**
+- ✅ **No impact on regular code blocks**
