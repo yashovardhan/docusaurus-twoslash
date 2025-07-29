@@ -1,19 +1,97 @@
 import React, { useRef, useState, useCallback } from "react";
 import clsx from "clsx";
 import { useThemeConfig, usePrismTheme } from "@docusaurus/theme-common";
-import {
-  parseCodeBlockTitle,
-  parseLanguage,
-  parseLines,
-  containsLineNumbers,
-  useCodeWordWrap,
-} from "@docusaurus/theme-common/internal";
-import { Highlight, type Language } from "prism-react-renderer";
-import Line from "@theme/CodeBlock/Line";
-import CopyButton from "@theme/CodeBlock/CopyButton";
-import WordWrapButton from "@theme/CodeBlock/WordWrapButton";
-import Container from "@theme/CodeBlock/Container";
-import type { Props } from "@theme/CodeBlock";
+import { Highlight, type Language, type Token } from "prism-react-renderer";
+
+// Type definitions for theme components that might not be available
+interface LineProps {
+  line: any[];
+  classNames: string[];
+  showLineNumbers: boolean;
+  getLineProps: any;
+  getTokenProps: any;
+}
+
+// Fallback implementations since we can't reliably import theme internals
+const parseCodeBlockTitle = (metastring?: string): string | undefined => {
+  if (!metastring) return undefined;
+  const match = metastring.match(/title="([^"]+)"/);
+  return match?.[1];
+};
+
+const parseLanguage = (className?: string): string | undefined => {
+  if (!className) return undefined;
+  const match = className.match(/language-(\w+)/);
+  return match?.[1];
+};
+
+const parseLines = (code: string, options: any) => {
+  const lines = code.split('\n');
+  const lineClassNames = lines.map(() => []);
+  return {
+    lineClassNames,
+    code,
+  };
+};
+
+const containsLineNumbers = (metastring?: string): boolean => {
+  return metastring?.includes('showLineNumbers') ?? false;
+};
+
+const useCodeWordWrap = () => ({
+  codeBlockRef: React.useRef<HTMLPreElement>(null),
+  isEnabled: false,
+  isCodeScrollable: false,
+  toggle: () => {},
+});
+
+// Fallback Line component
+const Line: React.FC<LineProps> = ({ line, classNames, showLineNumbers, getLineProps, getTokenProps }) => {
+  return (
+    <span {...getLineProps({ line, className: clsx(classNames) })}>
+      {showLineNumbers && <span className="token-line-number" />}
+      {line.map((token, key) => (
+        <span key={key} {...getTokenProps({ token, key })} />
+      ))}
+    </span>
+  );
+};
+
+// Fallback CopyButton component
+const CopyButton: React.FC<{ className: string; code: string }> = ({ className, code }) => {
+  const handleCopy = () => {
+    navigator.clipboard?.writeText(code);
+  };
+  
+  return (
+    <button className={className} onClick={handleCopy} type="button" title="Copy code">
+      Copy
+    </button>
+  );
+};
+
+// Fallback WordWrapButton component
+const WordWrapButton: React.FC<{ className: string; onClick: () => void; isEnabled: boolean }> = ({ 
+  className, 
+  onClick, 
+  isEnabled 
+}) => {
+  return (
+    <button className={className} onClick={onClick} type="button" title="Toggle word wrap">
+      {isEnabled ? 'Unwrap' : 'Wrap'}
+    </button>
+  );
+};
+
+// Fallback Container component
+const Container: React.FC<{ as: any; className: string; children: React.ReactNode; [key: string]: any }> = ({ 
+  as: As = 'div', 
+  className, 
+  children, 
+  ...props 
+}) => {
+  return <As className={className} {...props}>{children}</As>;
+};
 
 // Twoslash types
 interface TwoslashQuery {
@@ -31,31 +109,42 @@ interface TwoslashData {
   errors: any[];
 }
 
+interface Props {
+  children: React.ReactNode;
+  className?: string;
+  metastring?: string;
+  title?: string;
+  showLineNumbers?: boolean;
+  language?: string;
+  [key: string]: any;
+}
+
 /**
  * Normalizes language identifiers
  */
 function normalizeLanguage(language?: string): string {
-  return language?.toLowerCase().replace(/^language-/, "") || "text";
+  return language?.toLowerCase().replace(/^language-/, '') || 'text';
 }
 
 /**
  * Filters out Twoslash query lines (^?) from code content
  */
 function filterTwoslashLines(code: string): { cleanCode: string; lineMapping: number[] } {
-  const lines = code.split("\n");
+  const lines = code.split('\n');
   const cleanLines: string[] = [];
   const lineMapping: number[] = [];
-
+  
   lines.forEach((line, index) => {
-    if (!line.trim().startsWith("//    ^?") && !line.trim() === "^?") {
+    const trimmed = line.trim();
+    if (!trimmed.startsWith('//    ^?') && trimmed !== '^?') {
       cleanLines.push(line);
       lineMapping.push(index);
     }
   });
-
+  
   return {
-    cleanCode: cleanLines.join("\n"),
-    lineMapping,
+    cleanCode: cleanLines.join('\n'),
+    lineMapping
   };
 }
 
@@ -91,7 +180,9 @@ const TwoslashTooltip: React.FC<{
     >
       <div style={{ color: "var(--ifm-color-success)" }}>{query.text}</div>
       {query.docs && (
-        <div style={{ color: "var(--ifm-color-emphasis-700)", marginTop: "4px" }}>{query.docs}</div>
+        <div style={{ color: "var(--ifm-color-emphasis-700)", marginTop: "4px" }}>
+          {query.docs}
+        </div>
       )}
     </div>
   );
@@ -105,7 +196,7 @@ export default function TwoslashCodeBlock({
   showLineNumbers: showLineNumbersProp,
   language: languageProp,
   ...props
-}: Props & { [key: string]: any }): JSX.Element {
+}: Props): JSX.Element {
   const {
     prism: { defaultLanguage, magicComments },
   } = useThemeConfig();
@@ -150,7 +241,7 @@ export default function TwoslashCodeBlock({
   if (typeof children === "string") {
     rawCode = children;
   } else if (children && typeof children === "object" && "props" in children) {
-    rawCode = children.props.children || "";
+    rawCode = (children as any).props.children || "";
   }
 
   // Filter out ^? lines for Twoslash blocks
@@ -161,7 +252,10 @@ export default function TwoslashCodeBlock({
   // Use filtered code for parsing
   const codeToUse = isTwoslash ? cleanCode : rawCode;
 
-  const { lineClassNames, code: processedCode } = parseLines(codeToUse, {
+  const {
+    lineClassNames,
+    code: processedCode,
+  } = parseLines(codeToUse, {
     metastring,
     language,
     magicComments,
@@ -171,7 +265,8 @@ export default function TwoslashCodeBlock({
 
   const { language: preLanguage, ...preProps } = props;
 
-  const showLineNumbers = showLineNumbersProp ?? containsLineNumbers(metastring);
+  const showLineNumbers =
+    showLineNumbersProp ?? containsLineNumbers(metastring);
 
   // Create character position mapping for hover detection
   const twoslashRanges: Array<{
@@ -197,11 +292,10 @@ export default function TwoslashCodeBlock({
       if (!twoslashData?.queries?.length) return;
 
       const target = event.target as HTMLElement;
-      const preElement = event.currentTarget;
-
+      
       // Check if we're hovering over a token with twoslash data
-      if (target.classList.contains("twoslash-hover")) {
-        const queryIndex = target.getAttribute("data-twoslash-query-index");
+      if (target.classList.contains('twoslash-hover')) {
+        const queryIndex = target.getAttribute('data-twoslash-query-index');
         if (queryIndex !== null) {
           const query = twoslashData.queries[parseInt(queryIndex)];
           if (query) {
@@ -214,7 +308,7 @@ export default function TwoslashCodeBlock({
 
       setHoveredQuery(null);
     },
-    [twoslashData],
+    [twoslashData]
   );
 
   const handleMouseLeave = useCallback(() => {
@@ -233,11 +327,7 @@ export default function TwoslashCodeBlock({
     >
       {title && <div className="codeBlockTitle">{title}</div>}
       <div className="codeBlockContent">
-        <Highlight
-          theme={prismTheme}
-          code={processedCode}
-          language={(language ?? "text") as Language}
-        >
+        <Highlight theme={prismTheme} code={processedCode} language={(language ?? "text") as Language}>
           {({ className, style, tokens, getLineProps, getTokenProps }) => {
             return (
               <pre
@@ -265,13 +355,13 @@ export default function TwoslashCodeBlock({
                     let charPosition = 0;
                     const enhancedLine: any[] = [];
 
-                    line.forEach((token, tokenIndex) => {
+                    line.forEach((token: Token, tokenIndex: number) => {
                       const tokenStart = charPosition;
                       const tokenEnd = charPosition + token.content.length;
 
                       // Check if this token overlaps with any Twoslash ranges
                       const overlappingRanges = lineRanges.filter(
-                        (range) => tokenStart < range.end && tokenEnd > range.start,
+                        (range) => tokenStart < range.end && tokenEnd > range.start
                       );
 
                       if (overlappingRanges.length > 0) {
@@ -287,7 +377,7 @@ export default function TwoslashCodeBlock({
                           if (currentPos < overlapStart) {
                             const beforeContent = tokenContent.substring(
                               currentPos - tokenStart,
-                              overlapStart - tokenStart,
+                              overlapStart - tokenStart
                             );
                             enhancedLine.push({
                               ...token,
@@ -299,14 +389,14 @@ export default function TwoslashCodeBlock({
                           // Add the overlapping content with Twoslash styling
                           const overlapContent = tokenContent.substring(
                             overlapStart - tokenStart,
-                            overlapEnd - tokenStart,
+                            overlapEnd - tokenStart
                           );
                           enhancedLine.push({
                             ...token,
                             content: overlapContent,
-                            className: `${token.className || ""} twoslash-hover`,
+                            types: [(token as any).types?.[0] || 'token', 'twoslash-hover'].join(' '),
                             key: `${lineIndex}-${tokenIndex}-overlap-${overlapStart}`,
-                            "data-twoslash-query-index": twoslashData?.queries.indexOf(range.query),
+                            'data-twoslash-query-index': twoslashData?.queries.indexOf(range.query),
                           });
 
                           currentPos = overlapEnd;
@@ -339,13 +429,13 @@ export default function TwoslashCodeBlock({
                         classNames={lineClassNames[lineIndex]}
                         showLineNumbers={showLineNumbers}
                         getLineProps={getLineProps}
-                        getTokenProps={(tokenProps) => {
-                          const { key, className, children, ...rest } = tokenProps;
+                        getTokenProps={(tokenProps: any) => {
+                          const { key, types, children, ...rest } = tokenProps;
                           return {
                             ...rest,
-                            className: clsx(className, tokenProps.className),
+                            className: clsx(types, tokenProps.types),
                             key,
-                            "data-twoslash-query-index": tokenProps["data-twoslash-query-index"],
+                            'data-twoslash-query-index': tokenProps['data-twoslash-query-index'],
                           };
                         }}
                       />
@@ -367,7 +457,7 @@ export default function TwoslashCodeBlock({
           <CopyButton className="codeBlockCopyButton" code={processedCode} />
         </div>
       </div>
-
+      
       {/* Twoslash tooltip */}
       <TwoslashTooltip
         query={hoveredQuery!}
