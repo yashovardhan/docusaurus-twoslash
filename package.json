@@ -1,6 +1,6 @@
 {
     "name": "docusaurus-twoslash",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "description": "A Docusaurus plugin that adds TypeScript Twoslash integration for enhanced code blocks with type information",
     "main": "dist/index.js",
     "types": "dist/index.d.ts",
@@ -11,9 +11,10 @@
         "LICENSE"
     ],
     "scripts": {
-        "build": "npm run build:js && npm run build:types",
+        "build": "npm run build:js && npm run build:types && npm run build:assets",
         "build:js": "esbuild src/index.js --bundle --platform=node --target=node16 --outfile=dist/index.js --external:@docusaurus/* --external:react --external:react-dom --external:typescript --external:@typescript/twoslash",
         "build:types": "tsc --emitDeclarationOnly --outDir dist",
+        "build:assets": "mkdir -p dist/theme && cp src/theme/styles.css dist/theme/styles.css",
         "dev": "npm run build -- --watch",
         "prepublishOnly": "npm run build",
         "test": "jest",
